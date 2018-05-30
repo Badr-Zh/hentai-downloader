@@ -227,40 +227,47 @@ export function init (link, emit) {
 
   let reqHentai = async (uri, method, options) => new Promise((resolve, reject) => {
     let cookie = jarCookieSession()
+    let uri2 = new URL(uri.trim())
 
     options = Object.assign({
-      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36',
+      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36',
       'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
       'accept-language': 'th-TH,th;q=0.8,en-US;q=0.6,en;q=0.4,ja;q=0.2',
       'cache-control': 'no-cache',
       'cookie': cookie === '' ? undefined : cookie,
       'pragma': 'no-cache',
-      ':authority': 'e-hentai.org',
-      ':scheme': 'https',
-      'referer': `https://${baseUrl.hostname}/`,
+      // ':authority': 'e-hentai.org',
+      // ':scheme': 'https',
+      // ':method': 'GET',
+      // ':path': `${uri2.pathname}${uri2.query}`,
+      'referer': `https://${uri2.hostname}/`,
       'upgrade-insecure-requests': '1'
     }, options || {})
 
-    logs(`URL REQUEST: ${uri}`)
-    logs(`URL  COOKIE: ${cookie}`)
+    logs(`REQ-URL:`, uri)
+    logs(`REQ-HEADER:`, options)
+    logs(`REQ-COOKIE: ${cookie}`)
     xhr({
       url: uri,
       method: method || 'GET',
-      header: options,
-      // strictSSL: true,
-      // agentOptions: {
-      //   passphrase: 'dvg7po8ai',
-      //   key: fs.readFileSync(path.join(__dirname, 'cert/key.pem')),
-      //   cert: fs.readFileSync(path.join(__dirname, 'cert/cert.pem'))
-      // },
+      headers: options,
+      agentOptions: {
+        passphrase: 'dvg7po8ai',
+        key: fs.readFileSync(path.join(__dirname, '../../static/cert/key.pem')),
+        cert: fs.readFileSync(path.join(__dirname, '../../static/cert/cert.pem'))
+      },
       timeout: 5000
     }, (error, res, body) => {
       if (error) {
         reject(new Error(error))
         return
       }
+      logs(`-----------------------------------------------------------------------`)
       let { statusCode, headers } = res
-      logs(`URL RESPONSE: ${statusCode}`, headers['set-cookie'])
+      logs(`RES-STATUS: ${statusCode}`)
+      logs(`RES-COOKIE:`, headers)
+      logs('')
+      logs('')
       if (statusCode === 302 || statusCode === 200) {
         if (headers['set-cookie']) {
           for (let i = 0; i < headers['set-cookie'].length; i++) {
@@ -288,10 +295,23 @@ export function init (link, emit) {
     if (!/DOCTYPE.html.PUBLIC/ig.test(res)) throw new Error(res)
     let warnMe = /<a href="(.*?)">Never Warn Me Again/ig.exec(res)
     if (warnMe) {
-      throw new Error('Never Warn Me Again')
-      // res = await reqHentai(warnMe[1], 'GET', {
-      //   'referer': link
-      // })
+      // throw new Error('Never Warn Me Again')
+
+      xhr({
+        url: `https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct`,
+        method: 'OPTIONS',
+        cookie: '__cfduid=d1705711599595c6cb8f5735d4e3e86281527661185',
+        agentOptions: {
+          passphrase: 'dvg7po8ai',
+          key: fs.readFileSync(path.join(__dirname, '../../static/cert/key.pem')),
+          cert: fs.readFileSync(path.join(__dirname, '../../static/cert/cert.pem'))
+        },
+        timeout: 5000
+      })
+
+      res = await reqHentai(warnMe[1], 'GET', {
+        'referer': link
+      })
     }
     return getManga(res)
   })().catch(ex => {

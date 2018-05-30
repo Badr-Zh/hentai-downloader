@@ -6,7 +6,7 @@
   "license": "ISC",
   "main": "./dist/electron/main.js",
   "scripts": {
-    "test": "npm run unit",
+    "test": "babel-node --presets env test\\exhentai.js",
     "unit": "karma start test/unit/karma.conf.js",
     "build": "node .electron-vue/build.js && electron-builder",
     "build:dir": "node .electron-vue/build.js && electron-builder --dir",
